@@ -8,7 +8,6 @@ import { MarkdownPreview } from '@/components/markdown-preview';
 
 export default function Home() {
   const [files, setFiles] = useState<ProcessedFile[]>([]);
-  const [selectedFile, setSelectedFile] = useState<ProcessedFile | null>(null);
 
   const updateFile = useCallback((id: string, updates: Partial<Omit<ProcessedFile, 'id' | 'file'>>) => {
     setFiles(currentFiles =>
@@ -29,8 +28,6 @@ export default function Home() {
                 markdown: `# Converted: ${file.name}\n\nThis is a dummy markdown conversion of your PDF file. It includes some *styling* and a list:\n\n- Item 1\n- Item 2\n- Item 3\n\n\`\`\`javascript\nconsole.log("Hello, from ${file.name}!");\n\`\`\``
             };
             updateFile(file.id, completedFile);
-            // Auto-select the first successfully converted file
-            setSelectedFile(prev => prev === null ? { ...file, ...completedFile } : prev);
         } else {
             updateFile(file.id, { status: 'error', error: 'An unexpected error occurred during conversion.' });
         }
@@ -54,17 +51,12 @@ export default function Home() {
     } as ProcessedFile));
     setFiles(current => [...current, ...processed]);
   };
-
-  const handleSelectFile = (file: ProcessedFile) => {
-    if (file.status === 'completed') {
-        setSelectedFile(file);
-    }
-  };
   
   const handleClear = () => {
     setFiles([]);
-    setSelectedFile(null);
   };
+
+  const completedFiles = files.filter(f => f.status === 'completed');
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
@@ -81,8 +73,16 @@ export default function Home() {
       </header>
       <main className="flex-1 w-full container mx-auto p-4 md:p-8">
         <div className="grid gap-8 lg:grid-cols-2 items-start">
-            <PdfUploader files={files} onUpload={handleUpload} onSelectFile={handleSelectFile} selectedFileId={selectedFile?.id} onClear={handleClear} />
-            <MarkdownPreview file={selectedFile} />
+            <PdfUploader files={files} onUpload={handleUpload} onClear={handleClear} />
+            <div className="space-y-8">
+              {completedFiles.length > 0 ? (
+                completedFiles.map(file => (
+                  <MarkdownPreview key={file.id} file={file} />
+                ))
+              ) : (
+                <MarkdownPreview file={null} />
+              )}
+            </div>
         </div>
       </main>
       <footer className="border-t shrink-0 bg-card">

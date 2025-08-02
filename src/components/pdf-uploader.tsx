@@ -22,19 +22,15 @@ import type { ProcessedFile } from '@/lib/types';
 
 interface PdfUploaderProps {
   files: ProcessedFile[];
-  selectedFileId?: string;
   onUpload: (files: File[]) => void;
-  onSelectFile: (file: ProcessedFile) => void;
   onClear: () => void;
 }
 
 interface FileItemProps {
   file: ProcessedFile;
-  isSelected: boolean;
-  onSelectFile: (file: ProcessedFile) => void;
 }
 
-const FileItem: FC<FileItemProps> = ({ file, isSelected, onSelectFile }) => {
+const FileItem: FC<FileItemProps> = ({ file }) => {
   const getStatusIcon = () => {
     switch (file.status) {
       case 'queued':
@@ -50,11 +46,8 @@ const FileItem: FC<FileItemProps> = ({ file, isSelected, onSelectFile }) => {
 
   return (
     <div
-      onClick={() => onSelectFile(file)}
       className={cn(
-        'flex flex-col p-3 rounded-lg border transition-all duration-200 cursor-pointer',
-        isSelected ? 'border-primary bg-primary/5' : 'hover:bg-accent/50',
-        file.status !== 'completed' && 'cursor-default'
+        'flex flex-col p-3 rounded-lg border transition-all duration-200'
       )}
     >
       <div className="flex items-center gap-3">
@@ -75,7 +68,7 @@ const FileItem: FC<FileItemProps> = ({ file, isSelected, onSelectFile }) => {
   );
 };
 
-export const PdfUploader: FC<PdfUploaderProps> = ({ files, onUpload, onSelectFile, selectedFileId, onClear }) => {
+export const PdfUploader: FC<PdfUploaderProps> = ({ files, onUpload, onClear }) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -154,7 +147,7 @@ export const PdfUploader: FC<PdfUploaderProps> = ({ files, onUpload, onSelectFil
                 <ScrollArea className="flex-grow h-0 min-h-[200px]">
                     <div className="space-y-2 pr-4">
                         {files.map(file => (
-                            <FileItem key={file.id} file={file} isSelected={file.id === selectedFileId} onSelectFile={onSelectFile} />
+                            <FileItem key={file.id} file={file} />
                         ))}
                     </div>
                 </ScrollArea>
