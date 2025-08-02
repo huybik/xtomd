@@ -6,6 +6,11 @@ import type { ProcessedFile } from '@/lib/types';
 import { PdfUploader } from '@/components/pdf-uploader';
 import { MarkdownPreview } from '@/components/markdown-preview';
 import { useToast } from '@/hooks/use-toast';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set up the worker for pdfjs
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
 
 export default function Home() {
   const [files, setFiles] = useState<ProcessedFile[]>([]);
@@ -18,23 +23,52 @@ export default function Home() {
     );
   }, []);
 
-  const processFile = useCallback((file: ProcessedFile) => {
+  const processFile = useCallback(async (file: ProcessedFile) => {
     updateFile(file.id, { status: 'processing' });
     
-    // Simulate API call and conversion with subtle animation
-    const processTime = 1500 + Math.random() * 2000;
-    setTimeout(() => {
-        const isSuccess = Math.random() > 0.1; // 90% success rate
-        if (isSuccess) {
-            const completedFile = {
-                status: 'completed' as const,
-                markdown: `# Converted: ${file.name}\n\nThis is a dummy markdown conversion of your PDF file. It includes some *styling* and a list:\n\n- Item 1\n- Item 2\n- Item 3\n\n\`\`\`javascript\nconsole.log("Hello, from ${file.name}!");\n\`\`\``
-            };
-            updateFile(file.id, completedFile);
-        } else {
-            updateFile(file.id, { status: 'error', error: 'An unexpected error occurred during conversion.' });
+    try {
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        if (!event.target?.result) {
+          updateFile(file.id, { status: 'error', error: 'Failed to read file.' });
+          return;
         }
-    }, processTime);
+        
+        const typedArray = new Uint8Array(event.target.result as ArrayBuffer);
+        const loadingTask = pdfjsLib.getDocument({ data: typedArray });
+        const pdf = await loadingTask.promise;
+        
+        let textContent = '';
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const text = await page.getTextContent();
+          textContent += text.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n\n';
+        }
+        
+        updateFile(file.id, {
+          status: 'completed',
+          markdown: `
+# ${file.name}
+
+${textContent.trim()}
+          `.trim()
+        });
+      };
+      
+      reader.onerror = () => {
+        updateFile(file.id, { status: 'error', error: 'Error reading file.' });
+      };
+      
+      reader.readAsArrayBuffer(file.file);
+      
+    } catch (error) {
+      console.error('Error processing PDF:', error);
+      let errorMessage = 'An unexpected error occurred during conversion.';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+      updateFile(file.id, { status: 'error', error: errorMessage });
+    }
   }, [updateFile]);
 
   useEffect(() => {
