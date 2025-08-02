@@ -12,6 +12,8 @@ import {
   Copy,
   Download,
   CopyCheck,
+  CopyPlus,
+  DownloadCloud,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -29,6 +31,8 @@ interface PdfUploaderProps {
   onClear: () => void;
   onCopy: (file: ProcessedFile) => void;
   onDownload: (file: ProcessedFile) => void;
+  onCopyAll: () => void;
+  onDownloadAll: () => void;
   copiedFileId: string | null;
 }
 
@@ -89,7 +93,7 @@ const FileItem: FC<FileItemProps> = ({ file, onCopy, onDownload, isCopied }) => 
   );
 };
 
-export const PdfUploader: FC<PdfUploaderProps> = ({ files, onUpload, onClear, onCopy, onDownload, copiedFileId }) => {
+export const PdfUploader: FC<PdfUploaderProps> = ({ files, onUpload, onClear, onCopy, onDownload, onCopyAll, onDownloadAll, copiedFileId }) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -123,6 +127,8 @@ export const PdfUploader: FC<PdfUploaderProps> = ({ files, onUpload, onClear, on
       e.dataTransfer.clearData();
     }
   };
+
+  const completedFilesCount = files.filter(f => f.status === 'completed').length;
   
   return (
     <Card className="h-full flex flex-col">
@@ -162,6 +168,20 @@ export const PdfUploader: FC<PdfUploaderProps> = ({ files, onUpload, onClear, on
             onChange={handleFileChange}
           />
         </div>
+
+        {completedFilesCount > 1 && (
+          <div className="flex items-center gap-2">
+            <Button onClick={onCopyAll} className="w-full">
+              <CopyPlus className="mr-2 h-4 w-4" />
+              Copy All ({completedFilesCount})
+            </Button>
+            <Button onClick={onDownloadAll} className="w-full">
+              <DownloadCloud className="mr-2 h-4 w-4" />
+              Download All ({completedFilesCount})
+            </Button>
+          </div>
+        )}
+
         {files.length > 0 && (
             <>
                 <Separator />

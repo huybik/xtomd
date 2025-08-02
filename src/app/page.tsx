@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { BookText, Copy, Download, CopyCheck } from 'lucide-react';
+import { BookText } from 'lucide-react';
 import type { ProcessedFile } from '@/lib/types';
 import { PdfUploader } from '@/components/pdf-uploader';
 import { MarkdownPreview } from '@/components/markdown-preview';
@@ -85,6 +85,31 @@ export default function Home() {
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
   };
+  
+  const handleCopyAll = async () => {
+    const markdown = completedFiles.map(f => f.markdown).join('\n\n---\n\n');
+    if (!markdown) return;
+    try {
+      await navigator.clipboard.writeText(markdown);
+      toast({ title: 'All copied to clipboard!', description: 'Content of all converted files is now in your clipboard.' });
+    } catch (err) {
+      toast({ title: 'Failed to copy', description: 'Could not copy text to clipboard.', variant: 'destructive' });
+    }
+  };
+
+  const handleDownloadAll = () => {
+    const markdown = completedFiles.map(f => f.markdown).join('\n\n---\n\n');
+    if (!markdown) return;
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'xtomd_converted.md');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
 
   return (
@@ -108,6 +133,8 @@ export default function Home() {
               onClear={handleClear}
               onCopy={handleCopy}
               onDownload={handleDownload}
+              onCopyAll={handleCopyAll}
+              onDownloadAll={handleDownloadAll}
               copiedFileId={copiedFileId}
             />
             <div className="space-y-8">
