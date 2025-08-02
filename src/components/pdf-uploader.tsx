@@ -9,6 +9,9 @@ import {
   CheckCircle2,
   XCircle,
   Trash2,
+  Copy,
+  Download,
+  CopyCheck,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -24,13 +27,19 @@ interface PdfUploaderProps {
   files: ProcessedFile[];
   onUpload: (files: File[]) => void;
   onClear: () => void;
+  onCopy: (file: ProcessedFile) => void;
+  onDownload: (file: ProcessedFile) => void;
+  copiedFileId: string | null;
 }
 
 interface FileItemProps {
   file: ProcessedFile;
+  onCopy: (file: ProcessedFile) => void;
+  onDownload: (file: ProcessedFile) => void;
+  isCopied: boolean;
 }
 
-const FileItem: FC<FileItemProps> = ({ file }) => {
+const FileItem: FC<FileItemProps> = ({ file, onCopy, onDownload, isCopied }) => {
   const getStatusIcon = () => {
     switch (file.status) {
       case 'queued':
@@ -64,11 +73,23 @@ const FileItem: FC<FileItemProps> = ({ file }) => {
       {file.status === 'error' && (
         <p className="text-xs text-destructive mt-1">{file.error}</p>
       )}
+      {file.status === 'completed' && (
+        <div className="flex items-center justify-end gap-2 mt-2">
+            <Button variant="outline" size="icon" onClick={() => onCopy(file)}>
+                {isCopied ? <CopyCheck className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                <span className="sr-only">Copy Markdown</span>
+            </Button>
+            <Button variant="outline" size="icon" onClick={() => onDownload(file)}>
+                <Download className="h-4 w-4" />
+                <span className="sr-only">Download Markdown</span>
+            </Button>
+        </div>
+      )}
     </div>
   );
 };
 
-export const PdfUploader: FC<PdfUploaderProps> = ({ files, onUpload, onClear }) => {
+export const PdfUploader: FC<PdfUploaderProps> = ({ files, onUpload, onClear, onCopy, onDownload, copiedFileId }) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -147,7 +168,13 @@ export const PdfUploader: FC<PdfUploaderProps> = ({ files, onUpload, onClear }) 
                 <ScrollArea className="flex-grow h-0 min-h-[200px]">
                     <div className="space-y-2 pr-4">
                         {files.map(file => (
-                            <FileItem key={file.id} file={file} />
+                            <FileItem 
+                              key={file.id} 
+                              file={file} 
+                              onCopy={onCopy} 
+                              onDownload={onDownload}
+                              isCopied={copiedFileId === file.id}
+                            />
                         ))}
                     </div>
                 </ScrollArea>

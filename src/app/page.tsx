@@ -1,13 +1,16 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { BookText } from 'lucide-react';
+import { BookText, Copy, Download, CopyCheck } from 'lucide-react';
 import type { ProcessedFile } from '@/lib/types';
 import { PdfUploader } from '@/components/pdf-uploader';
 import { MarkdownPreview } from '@/components/markdown-preview';
+import { useToast } from '@/hooks/use-toast';
 
 export default function Home() {
   const [files, setFiles] = useState<ProcessedFile[]>([]);
+  const { toast } = useToast();
+  const [copiedFileId, setCopiedFileId] = useState<string | null>(null);
 
   const updateFile = useCallback((id: string, updates: Partial<Omit<ProcessedFile, 'id' | 'file'>>) => {
     setFiles(currentFiles =>
@@ -58,6 +61,32 @@ export default function Home() {
 
   const completedFiles = files.filter(f => f.status === 'completed');
 
+  const handleCopy = async (file: ProcessedFile) => {
+    if (!file.markdown) return;
+    try {
+      await navigator.clipboard.writeText(file.markdown);
+      setCopiedFileId(file.id);
+      toast({ title: 'Copied to clipboard!', description: `Content of ${file.name} is now in your clipboard.` });
+      setTimeout(() => setCopiedFileId(null), 2000);
+    } catch (err) {
+      toast({ title: 'Failed to copy', description: 'Could not copy text to clipboard.', variant: 'destructive' });
+    }
+  };
+
+  const handleDownload = (file: ProcessedFile) => {
+    if (!file.name || !file.markdown) return;
+    const blob = new Blob([file.markdown], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', file.name.replace(/\.pdf$/i, '.md'));
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
       <header className="border-b shrink-0 bg-card">
@@ -73,7 +102,14 @@ export default function Home() {
       </header>
       <main className="flex-1 w-full container mx-auto p-4 md:p-8">
         <div className="grid gap-8 lg:grid-cols-2 items-start">
-            <PdfUploader files={files} onUpload={handleUpload} onClear={handleClear} />
+            <PdfUploader 
+              files={files} 
+              onUpload={handleUpload} 
+              onClear={handleClear}
+              onCopy={handleCopy}
+              onDownload={handleDownload}
+              copiedFileId={copiedFileId}
+            />
             <div className="space-y-8">
               {completedFiles.length > 0 ? (
                 completedFiles.map(file => (
