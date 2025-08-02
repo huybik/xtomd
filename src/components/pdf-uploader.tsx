@@ -8,10 +8,7 @@ import {
   Loader2,
   CheckCircle2,
   XCircle,
-  Copy,
-  Download,
   Trash2,
-  CopyCheck,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -38,32 +35,6 @@ interface FileItemProps {
 }
 
 const FileItem: FC<FileItemProps> = ({ file, isSelected, onSelectFile }) => {
-  const { toast } = useToast();
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async (content: string) => {
-    try {
-      await navigator.clipboard.writeText(content);
-      setCopied(true);
-      toast({ title: 'Copied to clipboard!', description: `Content of ${file.name} is now in your clipboard.` });
-      setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      toast({ title: 'Failed to copy', description: 'Could not copy text to clipboard.', variant: 'destructive' });
-    }
-  };
-
-  const handleDownload = (filename: string, content: string) => {
-    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', filename.replace(/\.pdf$/i, '.md'));
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
-  
   const getStatusIcon = () => {
     switch (file.status) {
       case 'queued':
@@ -99,18 +70,6 @@ const FileItem: FC<FileItemProps> = ({ file, isSelected, onSelectFile }) => {
       )}
       {file.status === 'error' && (
         <p className="text-xs text-destructive mt-1">{file.error}</p>
-      )}
-      {file.status === 'completed' && file.markdown && (
-        <div className="mt-2 pt-2 border-t flex items-center justify-end gap-2">
-          <Button variant="ghost" size="sm" onClick={() => handleCopy(file.markdown!)}>
-            {copied ? <CopyCheck /> : <Copy />}
-            Copy
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => handleDownload(file.name, file.markdown!)}>
-            <Download />
-            Download
-          </Button>
-        </div>
       )}
     </div>
   );
