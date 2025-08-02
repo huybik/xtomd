@@ -6,16 +6,12 @@ import type { ProcessedFile } from '@/lib/types';
 import { PdfUploader } from '@/components/pdf-uploader';
 import { MarkdownPreview } from '@/components/markdown-preview';
 import { useToast } from '@/hooks/use-toast';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Set up the worker for pdfjs
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+import pdf2md from '@opendocsg/pdf2md';
 
 
 export default function Home() {
   const [files, setFiles] = useState<ProcessedFile[]>([]);
   const { toast } = useToast();
-  const [copiedFileId, setCopiedFileId] = useState<string | null>(null);
 
   const updateFile = useCallback((id: string, updates: Partial<Omit<ProcessedFile, 'id' | 'file'>>) => {
     setFiles(currentFiles =>
@@ -27,40 +23,11 @@ export default function Home() {
     updateFile(file.id, { status: 'processing' });
     
     try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        if (!event.target?.result) {
-          updateFile(file.id, { status: 'error', error: 'Failed to read file.' });
-          return;
-        }
-        
-        const typedArray = new Uint8Array(event.target.result as ArrayBuffer);
-        const loadingTask = pdfjsLib.getDocument({ data: typedArray });
-        const pdf = await loadingTask.promise;
-        
-        let textContent = '';
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const text = await page.getTextContent();
-          textContent += text.items.map(item => ('str' in item ? item.str : '')).join(' ') + '\n\n';
-        }
-        
-        updateFile(file.id, {
-          status: 'completed',
-          markdown: `
-# ${file.name}
-
-${textContent.trim()}
-          `.trim()
-        });
-      };
-      
-      reader.onerror = () => {
-        updateFile(file.id, { status: 'error', error: 'Error reading file.' });
-      };
-      
-      reader.readAsArrayBuffer(file.file);
-      
+      const markdown = await pdf2md(file.file);
+      updateFile(file.id, {
+        status: 'completed',
+        markdown: markdown,
+      });
     } catch (error) {
       console.error('Error processing PDF:', error);
       let errorMessage = 'An unexpected error occurred during conversion.';
@@ -94,31 +61,6 @@ ${textContent.trim()}
   };
 
   const completedFiles = files.filter(f => f.status === 'completed');
-
-  const handleCopy = async (file: ProcessedFile) => {
-    if (!file.markdown) return;
-    try {
-      await navigator.clipboard.writeText(file.markdown);
-      setCopiedFileId(file.id);
-      toast({ title: 'Copied to clipboard!', description: `Content of ${file.name} is now in your clipboard.` });
-      setTimeout(() => setCopiedFileId(null), 2000);
-    } catch (err) {
-      toast({ title: 'Failed to copy', description: 'Could not copy text to clipboard.', variant: 'destructive' });
-    }
-  };
-
-  const handleDownload = (file: ProcessedFile) => {
-    if (!file.name || !file.markdown) return;
-    const blob = new Blob([file.markdown], { type: 'text/markdown;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', file.name.replace(/\.pdf$/i, '.md'));
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-  };
   
   const handleCopyAll = async () => {
     const markdown = completedFiles.map(f => f.markdown).join('\n\n---\n\n');
@@ -138,7 +80,7 @@ ${textContent.trim()}
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.setAttribute('download', 'xtomd_converted.md');
+    link.setAttribute('download', 'xtomd_converted_all.md');
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -165,13 +107,10 @@ ${textContent.trim()}
               files={files} 
               onUpload={handleUpload} 
               onClear={handleClear}
-              onCopy={handleCopy}
-              onDownload={handleDownload}
               onCopyAll={handleCopyAll}
               onDownloadAll={handleDownloadAll}
-              copiedFileId={copiedFileId}
             />
-            <div className="space-y-8">
+            <div className="space-y-4">
               {completedFiles.length > 0 ? (
                 completedFiles.map(file => (
                   <MarkdownPreview key={file.id} file={file} />
