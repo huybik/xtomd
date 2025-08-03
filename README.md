@@ -60,76 +60,9 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
     - For individual files, use the copy and download buttons next to each file name.
     - To get all the content at once, use the "Copy All" or "Download All" buttons that appear when multiple files are successfully converted.
 
-## API Usage
+## API Documentation
 
-You can also use the API directly to convert PDF files.
-
-**Endpoint:** `POST /api`
-
-The endpoint accepts `multipart/form-data` and can handle single or multiple file uploads. Use the `file` key for each file you upload.
-
-### Example with `curl`
-
-#### Single File Upload
-
-```bash
-curl -X POST \
-  -F "file=@/path/to/your/document.pdf" \
-  http://localhost:3000/api
-```
-
-#### Multiple File Upload
-
-```bash
-curl -X POST \
-  -F "file=@/path/to/document1.pdf" \
-  -F "file=@/path/to/document2.pdf" \
-  http://localhost:3000/api
-```
-
-### Response Format
-
-The API returns a JSON object containing a `results` array. Each object in the array represents a processed file.
-
-**On Success:**
-
-```json
-{
-  "results": [
-    {
-      "fileName": "document1.pdf",
-      "status": "success",
-      "markdown": "# Your Converted Markdown..."
-    },
-    {
-      "fileName": "document2.pdf",
-      "status": "success",
-      "markdown": "# Another Converted Markdown..."
-    }
-  ]
-}
-```
-
-**On Failure (for a specific file):**
-
-If a file fails to convert, its `status` will be `error`, and it will include an `error` message.
-
-```json
-{
-  "results": [
-    {
-      "fileName": "document1.pdf",
-      "status": "success",
-      "markdown": "# Your Converted Markdown..."
-    },
-    {
-      "fileName": "problematic.pdf",
-      "status": "error",
-      "error": "Failed to convert problematic.pdf."
-    }
-  ]
-}
-```
+For details on how to use the API, please see the [API Documentation](/api-docs).
 
 ## Project Structure
 

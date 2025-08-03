@@ -126,9 +126,14 @@ export default function Home() {
             <BookText className="h-6 w-6 text-primary" />
             <h1 className="text-xl font-bold tracking-tight">xtomd</h1>
           </div>
-          <p className="hidden text-sm text-muted-foreground sm:block">
-            The easiest way to convert PDF to Markdown.
-          </p>
+          <div className="flex items-center gap-4">
+            <a href="/api-docs" className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary">
+              API Docs
+            </a>
+            <p className="hidden text-sm text-muted-foreground sm:block">
+              The easiest way to convert PDF to Markdown.
+            </p>
+          </div>
         </div>
       </header>
       <main className="flex-1 w-full container mx-auto p-4 md:p-8">
