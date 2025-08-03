@@ -18,23 +18,29 @@ export default function Home() {
     );
   }, []);
 
-  const processFile = useCallback((file: ProcessedFile) => {
+  const processFile = useCallback(async (file: ProcessedFile) => {
     updateFile(file.id, { status: 'processing' });
-    
-    // Simulate API call and conversion with subtle animation
-    const processTime = 1500 + Math.random() * 2000;
-    setTimeout(() => {
-        const isSuccess = Math.random() > 0.1; // 90% success rate
-        if (isSuccess) {
-            const completedFile = {
-                status: 'completed' as const,
-                markdown: `# Converted: ${file.name}\n\nThis is a dummy markdown conversion of your PDF file. It includes some *styling* and a list:\n\n- Item 1\n- Item 2\n- Item 3\n\n\`\`\`javascript\nconsole.log("Hello, from ${file.name}!");\n\`\`\``
-            };
-            updateFile(file.id, completedFile);
-        } else {
-            updateFile(file.id, { status: 'error', error: 'An unexpected error occurred during conversion.' });
-        }
-    }, processTime);
+
+    const formData = new FormData();
+    formData.append('file', file.file);
+
+    try {
+      const response = await fetch('/api', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const { error } = await response.json();
+        throw new Error(error || 'Failed to convert');
+      }
+
+      const { markdown } = await response.json();
+      updateFile(file.id, { status: 'completed', markdown });
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred.';
+      updateFile(file.id, { status: 'error', error: errorMessage });
+    }
   }, [updateFile]);
 
   useEffect(() => {
